@@ -1,32 +1,17 @@
-import { useEffect, useState, useRef } from "react";
+/**
+ * Main App component - Vite + React application with mesh gradient
+ * @updatedAt 2025-08-16
+ */
+
+import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
 
-import { Gradient } from "./utilities/Gradient";
+import { MeshGradientCanvas } from "./components/MeshGradientCanvas";
 
 function App() {
   const [count, setCount] = useState(0);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    // Create your instance
-    const gradient = new Gradient();
-
-    // Call `initGradient` with the canvas element using useRef
-    if (canvasRef.current) {
-      console.log("Canvas element:", canvasRef.current);
-      console.log(
-        "Canvas dimensions:",
-        canvasRef.current.width,
-        "x",
-        canvasRef.current.height
-      );
-      gradient.initGradient(canvasRef.current);
-    } else {
-      console.log("Canvas ref is null");
-    }
-  }, []);
 
   return (
     <>
@@ -50,7 +35,7 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
-      <canvas ref={canvasRef} style={{ width: "100%", height: "600px" }} />
+      <MeshGradientCanvas />
     </>
   );
 }
