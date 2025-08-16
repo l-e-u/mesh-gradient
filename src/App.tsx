@@ -50,11 +50,7 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
-      <canvas
-        ref={canvasRef}
-        data-transition-in
-        style={{ width: "100%", height: "600px" }}
-      />
+      <canvas ref={canvasRef} style={{ width: "100%", height: "600px" }} />
     </>
   );
 }

@@ -502,7 +502,6 @@ class Gradient {
       e(this, "shaderFiles", void 0),
       e(this, "vertexShader", void 0),
       e(this, "sectionColors", void 0),
-      e(this, "computedCanvasStyle", void 0),
       e(this, "conf", void 0),
       e(this, "uniforms", void 0),
       e(this, "t", 1253106),
@@ -598,6 +597,13 @@ class Gradient {
             ? canvasElement
             : document.querySelector(canvasElement);
         console.log("Canvas element set to:", this.el);
+
+        // Set canvas dimensions directly
+        if (this.el) {
+          this.el.width = window.innerWidth;
+          this.el.height = 600;
+        }
+
         this.connect();
         return this;
       });
@@ -626,9 +632,7 @@ class Gradient {
         ? console.log("DID NOT LOAD HERO STRIPE CANVAS")
         : ((this.minigl = new MiniGl(this.el, null, null, !0)),
           requestAnimationFrame(() => {
-            this.el &&
-              ((this.computedCanvasStyle = getComputedStyle(this.el)),
-              this.waitForCssVars());
+            this.el && this.waitForCssVars();
           }));
     /*
          this.scrollObserver = await s.create(.1, !1),
@@ -805,53 +809,22 @@ class Gradient {
    * Using default colors assigned below if no variables have been found after maxCssVarRetries
    */
   waitForCssVars() {
-    if (
-      this.computedCanvasStyle &&
-      -1 !==
-        this.computedCanvasStyle
-          .getPropertyValue("--gradient-color-1")
-          .indexOf("#")
-    )
-      this.init(), this.addIsLoadedClass();
-    else {
-      if (
-        ((this.cssVarRetries += 1), this.cssVarRetries > this.maxCssVarRetries)
-      ) {
-        return (
-          (this.sectionColors = [16711680, 16711680, 16711935, 65280, 255]),
-          void this.init()
-        );
-      }
-      requestAnimationFrame(() => this.waitForCssVars());
-    }
+    // Use default colors instead of waiting for CSS variables
+    this.sectionColors = [
+      0xc3e4ff, // #c3e4ff - light blue
+      0x6ec3f4, // #6ec3f4 - blue
+      0xeae2ff, // #eae2ff - light purple
+      0xb9beff, // #b9beff - purple
+    ];
+    this.init();
+    this.addIsLoadedClass();
   }
   /*
    * Initializes the four section colors by retrieving them from css variables.
    */
   initGradientColors() {
-    this.sectionColors = [
-      "--gradient-color-1",
-      "--gradient-color-2",
-      "--gradient-color-3",
-      "--gradient-color-4",
-    ]
-      .map((cssPropertyName) => {
-        let hex = this.computedCanvasStyle
-          .getPropertyValue(cssPropertyName)
-          .trim();
-        //Check if shorthand hex value was used and double the length so the conversion in normalizeColor will work.
-        if (4 === hex.length) {
-          const hexTemp = hex
-            .substr(1)
-            .split("")
-            .map((hexTemp) => hexTemp + hexTemp)
-            .join("");
-          hex = `#${hexTemp}`;
-        }
-        return hex && `0x${hex.substr(1)}`;
-      })
-      .filter(Boolean)
-      .map(normalizeColor);
+    // Colors are already set in waitForCssVars, just convert them to normalized format
+    this.sectionColors = this.sectionColors.map(normalizeColor);
   }
 }
 
