@@ -9,12 +9,10 @@ import {
 
 /**
  * Gradient class for creating animated mesh gradients
- * @updatedAt 2024-12-19
+ * @updatedAt 2025-08-16
  */
 export class Gradient {
   el: HTMLCanvasElement | null = null;
-  cssVarRetries = 0;
-  maxCssVarRetries = 200;
   angle = 0;
   isLoadedClass = false;
   isScrolling = false;
@@ -57,12 +55,19 @@ export class Gradient {
   handleMouseUp: () => void;
   handleKeyDown: (e: KeyboardEvent) => void;
   animate: (e: number) => void;
-  addIsLoadedClass: () => void;
   pause: () => void;
   play: () => void;
-  initGradient: (canvasElement: HTMLCanvasElement | string) => this;
+  initGradient: (canvasElement: HTMLCanvasElement) => this;
 
   constructor() {
+    // Set default colors immediately
+    this.sectionColors = [
+      0xc3e4ff, // #c3e4ff - light blue
+      0x6ec3f4, // #6ec3f4 - blue
+      0xeae2ff, // #eae2ff - light purple
+      0xb9beff, // #b9beff - purple
+    ];
+
     this.handleScroll = () => {
       clearTimeout(this.scrollingTimeout);
       this.scrollingTimeout = setTimeout(
@@ -124,15 +129,6 @@ export class Gradient {
         requestAnimationFrame(this.animate);
     };
 
-    this.addIsLoadedClass = () => {
-      /*this.isIntersecting && */ !this.isLoadedClass &&
-        ((this.isLoadedClass = true),
-        this.el?.classList.add("isLoaded"),
-        setTimeout(() => {
-          this.el?.parentElement?.classList.add("isLoaded");
-        }, 3e3));
-    };
-
     this.pause = () => {
       this.conf.playing = false;
     };
@@ -142,13 +138,8 @@ export class Gradient {
       this.conf.playing = true;
     };
 
-    this.initGradient = (canvasElement: HTMLCanvasElement | string) => {
-      // Accept either a canvas element or a selector string for backward compatibility
-      console.log("initGradient called with:", canvasElement);
-      this.el =
-        canvasElement instanceof HTMLCanvasElement
-          ? canvasElement
-          : (document.querySelector(canvasElement) as HTMLCanvasElement);
+    this.initGradient = (canvasElement: HTMLCanvasElement) => {
+      this.el = canvasElement;
       console.log("Canvas element set to:", this.el);
 
       // Set canvas dimensions directly
@@ -177,12 +168,10 @@ export class Gradient {
         rotation: 0,
         playing: true,
       }),
-      document.querySelectorAll("canvas").length < 1
-        ? console.log("DID NOT LOAD HERO STRIPE CANVAS")
-        : ((this.minigl = new MiniGl(this.el, null, null, true)),
-          requestAnimationFrame(() => {
-            this.el && this.waitForCssVars();
-          }));
+      (this.minigl = new MiniGl(this.el, null, null, true)),
+      requestAnimationFrame(() => {
+        this.el && this.init();
+      });
   }
   disconnect() {
     this.scrollObserver &&
@@ -336,26 +325,11 @@ export class Gradient {
       window.addEventListener("resize", this.resize);
   }
   /*
-   * Waiting for the css variables to become available, usually on page load before we can continue.
-   * Using default colors assigned below if no variables have been found after maxCssVarRetries
-   */
-  waitForCssVars() {
-    // Use default colors instead of waiting for CSS variables
-    this.sectionColors = [
-      0xc3e4ff, // #c3e4ff - light blue
-      0x6ec3f4, // #6ec3f4 - blue
-      0xeae2ff, // #eae2ff - light purple
-      0xb9beff, // #b9beff - purple
-    ];
-    this.init();
-    this.addIsLoadedClass();
-  }
-  /*
-   * Initializes the four section colors by retrieving them from css variables.
+   * Initializes the four section colors by converting them to normalized format.
    */
   initGradientColors() {
-    // Colors are already set in waitForCssVars, just convert them to normalized format
-    this.sectionColors = this.sectionColors?.map(normalizeColor);
+    // Colors are already set in constructor, just convert them to normalized format
+    this.sectionColors = this.sectionColors.map(normalizeColor);
   }
 }
 
