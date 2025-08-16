@@ -50,7 +50,7 @@ export interface IGradient {
   isIntersecting: boolean;
   shaderFiles: ShaderFiles | undefined;
   vertexShader: string | undefined;
-  sectionColors: number[] | undefined;
+  sectionColors: number[] | number[][] | undefined;
   conf: GradientConfig | undefined;
   uniforms: GradientUniforms | undefined;
   t: number;
