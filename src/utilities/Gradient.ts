@@ -1,5 +1,4 @@
 import { normalizeColor } from "./normalizeColor.ts";
-import { defineProperty } from "./defineProperty.ts";
 import { MiniGl } from "./MiniGl.ts";
 import {
   VERTEX_SHADER,
@@ -8,130 +7,160 @@ import {
   BLEND_SHADER,
 } from "./shaders.ts";
 
-//Gradient object
+/**
+ * Gradient class for creating animated mesh gradients
+ * @updatedAt 2024-12-19
+ */
 export class Gradient {
+  el: HTMLCanvasElement | null = null;
+  cssVarRetries = 0;
+  maxCssVarRetries = 200;
+  angle = 0;
+  isLoadedClass = false;
+  isScrolling = false;
+  scrollingTimeout: number | undefined = undefined;
+  scrollingRefreshDelay = 200;
+  isIntersecting = false;
+  shaderFiles: any = undefined;
+  vertexShader: string | undefined = undefined;
+  sectionColors: any = undefined;
+  conf: any = undefined;
+  uniforms: any = undefined;
+  t = 1253106;
+  last = 0;
+  width: number | undefined = undefined;
+  minWidth = 1111;
+  height = 600;
+  xSegCount: number | undefined = undefined;
+  ySegCount: number | undefined = undefined;
+  mesh: any = undefined;
+  material: any = undefined;
+  geometry: any = undefined;
+  minigl: any = undefined;
+  scrollObserver: any = undefined;
+  amp = 320;
+  seed = 5;
+  freqX = 14e-5;
+  freqY = 29e-5;
+  freqDelta = 1e-5;
+  activeColors = [1, 1, 1, 1];
+  isMetaKey = false;
+  isGradientLegendVisible = false;
+  isMouseDown = false;
+  isStatic = false;
+
+  // Method declarations
+  handleScroll: () => void;
+  handleScrollEnd: () => void;
+  resize: () => void;
+  handleMouseDown: (e: MouseEvent) => void;
+  handleMouseUp: () => void;
+  handleKeyDown: (e: KeyboardEvent) => void;
+  animate: (e: number) => void;
+  addIsLoadedClass: () => void;
+  pause: () => void;
+  play: () => void;
+  initGradient: (canvasElement: HTMLCanvasElement | string) => this;
+
   constructor() {
-    defineProperty(this, "el", void 0),
-      defineProperty(this, "cssVarRetries", 0),
-      defineProperty(this, "maxCssVarRetries", 200),
-      defineProperty(this, "angle", 0),
-      defineProperty(this, "isLoadedClass", !1),
-      defineProperty(this, "isScrolling", !1),
-      /*defineProperty(this, "isStatic", o.disableAmbientAnimations()),*/ defineProperty(
-        this,
-        "scrollingTimeout",
-        void 0
-      ),
-      defineProperty(this, "scrollingRefreshDelay", 200),
-      defineProperty(this, "isIntersecting", !1),
-      defineProperty(this, "shaderFiles", void 0),
-      defineProperty(this, "vertexShader", void 0),
-      defineProperty(this, "sectionColors", void 0),
-      defineProperty(this, "conf", void 0),
-      defineProperty(this, "uniforms", void 0),
-      defineProperty(this, "t", 1253106),
-      defineProperty(this, "last", 0),
-      defineProperty(this, "width", void 0),
-      defineProperty(this, "minWidth", 1111),
-      defineProperty(this, "height", 600),
-      defineProperty(this, "xSegCount", void 0),
-      defineProperty(this, "ySegCount", void 0),
-      defineProperty(this, "mesh", void 0),
-      defineProperty(this, "material", void 0),
-      defineProperty(this, "geometry", void 0),
-      defineProperty(this, "minigl", void 0),
-      defineProperty(this, "scrollObserver", void 0),
-      defineProperty(this, "amp", 320),
-      defineProperty(this, "seed", 5),
-      defineProperty(this, "freqX", 14e-5),
-      defineProperty(this, "freqY", 29e-5),
-      defineProperty(this, "freqDelta", 1e-5),
-      defineProperty(this, "activeColors", [1, 1, 1, 1]),
-      defineProperty(this, "isMetaKey", !1),
-      defineProperty(this, "isGradientLegendVisible", !1),
-      defineProperty(this, "isMouseDown", !1),
-      defineProperty(this, "handleScroll", () => {
-        clearTimeout(this.scrollingTimeout),
-          (this.scrollingTimeout = setTimeout(
-            this.handleScrollEnd,
-            this.scrollingRefreshDelay
-          )),
-          this.isGradientLegendVisible && this.hideGradientLegend(),
-          this.conf.playing && ((this.isScrolling = !0), this.pause());
-      }),
-      defineProperty(this, "handleScrollEnd", () => {
-        (this.isScrolling = !1), this.isIntersecting && this.play();
-      }),
-      defineProperty(this, "resize", () => {
-        (this.width = window.innerWidth),
-          this.minigl.setSize(this.width, this.height),
-          this.minigl.setOrthographicCamera(),
-          (this.xSegCount = Math.ceil(this.width * this.conf.density[0])),
-          (this.ySegCount = Math.ceil(this.height * this.conf.density[1])),
-          this.mesh.geometry.setTopology(this.xSegCount, this.ySegCount),
-          this.mesh.geometry.setSize(this.width, this.height),
-          (this.mesh.material.uniforms.u_shadow_power.value =
-            this.width < 600 ? 5 : 6);
-      }),
-      defineProperty(this, "handleMouseDown", (e) => {
-        this.isGradientLegendVisible &&
-          ((this.isMetaKey = e.metaKey),
-          (this.isMouseDown = !0),
-          !1 === this.conf.playing && requestAnimationFrame(this.animate));
-      }),
-      defineProperty(this, "handleMouseUp", () => {
-        this.isMouseDown = !1;
-      }),
-      defineProperty(this, "animate", (e) => {
-        if (!this.shouldSkipFrame(e) || this.isMouseDown) {
-          if (
-            ((this.t += Math.min(e - this.last, 1e3 / 15)),
-            (this.last = e),
-            this.isMouseDown)
-          ) {
-            let e = 160;
-            this.isMetaKey && (e = -160), (this.t += e);
-          }
-          (this.mesh.material.uniforms.u_time.value = this.t),
-            this.minigl.render();
-        }
-        if (0 !== this.last && this.isStatic)
-          return this.minigl.render(), void this.disconnect();
-        /*this.isIntersecting && */ (this.conf.playing || this.isMouseDown) &&
-          requestAnimationFrame(this.animate);
-      }),
-      defineProperty(this, "addIsLoadedClass", () => {
-        /*this.isIntersecting && */ !this.isLoadedClass &&
-          ((this.isLoadedClass = !0),
-          this.el.classList.add("isLoaded"),
-          setTimeout(() => {
-            this.el.parentElement.classList.add("isLoaded");
-          }, 3e3));
-      }),
-      defineProperty(this, "pause", () => {
-        this.conf.playing = false;
-      }),
-      defineProperty(this, "play", () => {
-        requestAnimationFrame(this.animate), (this.conf.playing = true);
-      }),
-      defineProperty(this, "initGradient", (canvasElement) => {
-        // Accept either a canvas element or a selector string for backward compatibility
-        console.log("initGradient called with:", canvasElement);
-        this.el =
-          canvasElement instanceof HTMLCanvasElement
-            ? canvasElement
-            : document.querySelector(canvasElement);
-        console.log("Canvas element set to:", this.el);
+    this.handleScroll = () => {
+      clearTimeout(this.scrollingTimeout);
+      this.scrollingTimeout = setTimeout(
+        this.handleScrollEnd,
+        this.scrollingRefreshDelay
+      );
+      this.isGradientLegendVisible && this.hideGradientLegend();
+      this.conf.playing && ((this.isScrolling = true), this.pause());
+    };
 
-        // Set canvas dimensions directly
-        if (this.el) {
-          this.el.width = window.innerWidth;
-          this.el.height = 600;
-        }
+    this.handleScrollEnd = () => {
+      this.isScrolling = false;
+      this.isIntersecting && this.play();
+    };
 
-        this.connect();
-        return this;
-      });
+    this.resize = () => {
+      this.width = window.innerWidth;
+      this.minigl.setSize(this.width, this.height);
+      this.minigl.setOrthographicCamera();
+      this.xSegCount = Math.ceil(this.width * this.conf.density[0]);
+      this.ySegCount = Math.ceil(this.height * this.conf.density[1]);
+      this.mesh.geometry.setTopology(this.xSegCount, this.ySegCount);
+      this.mesh.geometry.setSize(this.width, this.height);
+      this.mesh.material.uniforms.u_shadow_power.value =
+        this.width < 600 ? 5 : 6;
+    };
+
+    this.handleMouseDown = (e: MouseEvent) => {
+      this.isGradientLegendVisible &&
+        ((this.isMetaKey = e.metaKey),
+        (this.isMouseDown = true),
+        false === this.conf.playing && requestAnimationFrame(this.animate));
+    };
+
+    this.handleMouseUp = () => {
+      this.isMouseDown = false;
+    };
+
+    this.handleKeyDown = (_e: KeyboardEvent) => {
+      // Handle keyboard events if needed
+    };
+
+    this.animate = (e: number) => {
+      if (!this.shouldSkipFrame(e) || this.isMouseDown) {
+        if (
+          ((this.t += Math.min(e - this.last, 1e3 / 15)),
+          (this.last = e),
+          this.isMouseDown)
+        ) {
+          let timeIncrement = 160;
+          this.isMetaKey && (timeIncrement = -160);
+          this.t += timeIncrement;
+        }
+        this.mesh.material.uniforms.u_time.value = this.t;
+        this.minigl.render();
+      }
+      if (0 !== this.last && this.isStatic)
+        return this.minigl.render(), void this.disconnect();
+      /*this.isIntersecting && */ (this.conf.playing || this.isMouseDown) &&
+        requestAnimationFrame(this.animate);
+    };
+
+    this.addIsLoadedClass = () => {
+      /*this.isIntersecting && */ !this.isLoadedClass &&
+        ((this.isLoadedClass = true),
+        this.el?.classList.add("isLoaded"),
+        setTimeout(() => {
+          this.el?.parentElement?.classList.add("isLoaded");
+        }, 3e3));
+    };
+
+    this.pause = () => {
+      this.conf.playing = false;
+    };
+
+    this.play = () => {
+      requestAnimationFrame(this.animate);
+      this.conf.playing = true;
+    };
+
+    this.initGradient = (canvasElement: HTMLCanvasElement | string) => {
+      // Accept either a canvas element or a selector string for backward compatibility
+      console.log("initGradient called with:", canvasElement);
+      this.el =
+        canvasElement instanceof HTMLCanvasElement
+          ? canvasElement
+          : (document.querySelector(canvasElement) as HTMLCanvasElement);
+      console.log("Canvas element set to:", this.el);
+
+      // Set canvas dimensions directly
+      if (this.el) {
+        this.el.width = window.innerWidth;
+        this.el.height = 600;
+      }
+
+      this.connect();
+      return this;
+    };
   }
   async connect() {
     console.log("connect() called, this.el:", this.el);
@@ -174,7 +203,7 @@ export class Gradient {
         value: 5,
       }),
       u_darken_top: new this.minigl.Uniform({
-        value: "" === this.el.dataset.jsDarkenTop ? 1 : 0,
+        value: "" === this.el?.dataset.jsDarkenTop ? 1 : 0,
       }),
       u_active_colors: new this.minigl.Uniform({
         value: this.activeColors,
@@ -286,18 +315,18 @@ export class Gradient {
       (this.geometry = new this.minigl.PlaneGeometry()),
       (this.mesh = new this.minigl.Mesh(this.geometry, this.material));
   }
-  shouldSkipFrame(e) {
+  shouldSkipFrame(e: number) {
     return (
       !!window.document.hidden ||
       !this.conf.playing ||
-      parseInt(e, 10) % 2 == 0 ||
+      parseInt(e.toString(), 10) % 2 == 0 ||
       void 0
     );
   }
-  updateFrequency(e) {
+  updateFrequency(e: number) {
     (this.freqX += e), (this.freqY += e);
   }
-  toggleColor(index) {
+  toggleColor(index: number) {
     this.activeColors[index] = 0 === this.activeColors[index] ? 1 : 0;
   }
   showGradientLegend() {
@@ -336,7 +365,7 @@ export class Gradient {
    */
   initGradientColors() {
     // Colors are already set in waitForCssVars, just convert them to normalized format
-    this.sectionColors = this.sectionColors.map(normalizeColor);
+    this.sectionColors = this.sectionColors?.map(normalizeColor);
   }
 }
 
