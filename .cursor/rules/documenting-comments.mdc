@@ -1,0 +1,11 @@
+---
+description: Documenting comments
+globs:
+alwaysApply: true
+---
+
+- When writing comments, the file itself starts with a block comment containing a short description of the file's overview. This block comments requires tag "@updatedAt" with today's system date in the YYYY-MM-DD format.
+
+- When updating a file check for the block comment at the start of the file. If one is not there, add it.
+
+- Creating or updating files are required to have its "@updatedAt" to be updated to today's date in the YYYY-MM-DD format.
