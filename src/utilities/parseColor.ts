@@ -41,15 +41,6 @@ export function parseRgbaColor(colorString: string): number[] | null {
 }
 
 /**
- * Legacy function for backward compatibility - now returns RGBA with alpha = 1.0
- * @deprecated Use parseRgbaColor instead
- */
-export function parseRgbColor(colorString: string): number[] | null {
-  const result = parseRgbaColor(colorString);
-  return result ? result.slice(0, 3) : null; // Return only RGB components for backward compatibility
-}
-
-/**
  * Validates and parses an array of color strings
  * @param colors - Array of RGB/RGBA color strings (max 5)
  * @returns Array of normalized RGBA color arrays or null if invalid

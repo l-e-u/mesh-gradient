@@ -5,7 +5,7 @@
 
 import { useEffect, useRef } from "react";
 import { Gradient } from "../utilities/Gradient";
-import { parseColorArray } from "../utilities/parseRgbColor";
+import { parseColorArray } from "../utilities/parseColor";
 
 interface MeshGradientCanvasProps {
   width?: string;
