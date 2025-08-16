@@ -64,7 +64,10 @@ export class Gradient implements IGradient {
   animate: (e: number) => void;
   pause: () => void;
   play: () => void;
-  initGradient: (canvasElement: HTMLCanvasElement) => IGradient;
+  initGradient: (
+    canvasElement: HTMLCanvasElement,
+    customColors?: number[][] | null
+  ) => IGradient;
 
   constructor() {
     this.handleScroll = () => {
@@ -137,7 +140,10 @@ export class Gradient implements IGradient {
       this.conf!.playing = true;
     };
 
-    this.initGradient = (canvasElement: HTMLCanvasElement) => {
+    this.initGradient = (
+      canvasElement: HTMLCanvasElement,
+      customColors?: number[][] | null
+    ) => {
       if (!canvasElement) {
         throw new Error("Canvas element is required");
       }
@@ -148,6 +154,12 @@ export class Gradient implements IGradient {
       // Set canvas dimensions directly
       this.el!.width = window.innerWidth;
       this.el!.height = 600;
+
+      // Store custom colors if provided
+      if (customColors && customColors.length > 0) {
+        this.sectionColors = customColors;
+        console.log("Using custom colors:", customColors);
+      }
 
       this.connect();
       return this;
@@ -329,16 +341,18 @@ export class Gradient implements IGradient {
    * Initializes the four section colors by converting them to normalized format.
    */
   normalizeColors() {
-    // Colors are already set in constructor, just convert them to normalized format
-    const defaultColors = [
-      0xc3e4ff, // #c3e4ff - light blue
-      0x6ec3f4, // #6ec3f4 - blue
-      0xeae2ff, // #eae2ff - light purple
-      0xb9beff, // #b9beff - purple
-    ];
-    const normalizedColors = defaultColors.map(normalizeColor);
-
-    this.sectionColors = normalizedColors;
+    // Only set default colors if custom colors weren't provided
+    if (this.sectionColors.length === 0) {
+      const defaultColors = [
+        0xc3e4ff, // #c3e4ff - light blue
+        0x6ec3f4, // #6ec3f4 - blue
+        0xeae2ff, // #eae2ff - light purple
+        0xb9beff, // #b9beff - purple
+      ];
+      const normalizedColors = defaultColors.map(normalizeColor);
+      this.sectionColors = normalizedColors;
+    }
+    // If custom colors were provided, they're already normalized from parseRgbColor
   }
 }
 

@@ -35,7 +35,15 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
-      <MeshGradientCanvas />
+      <MeshGradientCanvas
+        colors={[
+          "rgb(255, 100, 100)", // Red
+          "rgb(100, 255, 100)", // Green
+          "rgb(100, 100, 255)", // Blue
+          "rgb(255, 255, 100)", // Yellow
+          "rgb(255, 100, 255)", // Magenta
+        ]}
+      />
     </>
   );
 }
