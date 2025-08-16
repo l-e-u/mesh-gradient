@@ -6,12 +6,19 @@ import {
   NOISE_SHADER,
   BLEND_SHADER,
 } from "./shaders.ts";
+import type {
+  IGradient,
+  GradientConfig,
+  GradientUniforms,
+  ShaderFiles,
+} from "./types/Gradient.types";
+import type { Mesh, Material, PlaneGeometry } from "./types/MiniGl.types";
 
 /**
  * Gradient class for creating animated mesh gradients
  * @updatedAt 2025-08-16
  */
-export class Gradient {
+export class Gradient implements IGradient {
   el: HTMLCanvasElement | null = null;
   angle = 0;
   isLoadedClass = false;
@@ -19,11 +26,11 @@ export class Gradient {
   scrollingTimeout: number | undefined = undefined;
   scrollingRefreshDelay = 200;
   isIntersecting = false;
-  shaderFiles: any = undefined;
+  shaderFiles: ShaderFiles | undefined = undefined;
   vertexShader: string | undefined = undefined;
-  sectionColors: any = undefined;
-  conf: any = undefined;
-  uniforms: any = undefined;
+  sectionColors: number[] | undefined = undefined;
+  conf: GradientConfig | undefined = undefined;
+  uniforms: GradientUniforms | undefined = undefined;
   t = 1253106;
   last = 0;
   width: number | undefined = undefined;
@@ -31,11 +38,11 @@ export class Gradient {
   height = 600;
   xSegCount: number | undefined = undefined;
   ySegCount: number | undefined = undefined;
-  mesh: any = undefined;
-  material: any = undefined;
-  geometry: any = undefined;
-  minigl: any = undefined;
-  scrollObserver: any = undefined;
+  mesh: Mesh | undefined = undefined;
+  material: Material | undefined = undefined;
+  geometry: PlaneGeometry | undefined = undefined;
+  minigl: MiniGl | undefined = undefined;
+  scrollObserver: IntersectionObserver | undefined = undefined;
   amp = 320;
   seed = 5;
   freqX = 14e-5;
@@ -57,7 +64,7 @@ export class Gradient {
   animate: (e: number) => void;
   pause: () => void;
   play: () => void;
-  initGradient: (canvasElement: HTMLCanvasElement) => this;
+  initGradient: (canvasElement: HTMLCanvasElement) => IGradient;
 
   constructor() {
     // Set default colors immediately

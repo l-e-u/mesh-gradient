@@ -1,22 +1,49 @@
-//Essential functionality of WebGl
-//t = width
-//n = height
-class MiniGl {
-  constructor(canvas, width, height, debug = false) {
+/**
+ * Essential functionality of WebGL wrapper
+ * @updatedAt 2025-08-16
+ */
+
+import type {
+  MiniGl as IMiniGl,
+  CommonUniforms,
+  DebugFunction,
+  ShaderType,
+} from "./types/MiniGl.types";
+class MiniGl implements IMiniGl {
+  canvas!: HTMLCanvasElement;
+  gl!: WebGLRenderingContext;
+  meshes: any[] = [];
+  width!: number;
+  height!: number;
+  debug!: DebugFunction;
+  lastDebugMsg?: Date;
+  commonUniforms!: CommonUniforms;
+  Material: any;
+  Uniform: any;
+  PlaneGeometry: any;
+  Mesh: any;
+  Attribute: any;
+
+  constructor(
+    canvas: HTMLCanvasElement,
+    width?: number,
+    height?: number,
+    debug: boolean = false
+  ) {
     const _miniGl = this,
       debug_output =
         -1 !== document.location.search.toLowerCase().indexOf("debug=webgl");
     (_miniGl.canvas = canvas),
       (_miniGl.gl = _miniGl.canvas.getContext("webgl", {
         antialias: true,
-      })),
+      }) as WebGLRenderingContext),
       (_miniGl.meshes = []);
     const context = _miniGl.gl;
     width && height && this.setSize(width, height),
       _miniGl.lastDebugMsg,
       (_miniGl.debug =
         debug && debug_output
-          ? function (e) {
+          ? function (e: string) {
               const t = new Date();
               t - _miniGl.lastDebugMsg > 1e3 && console.log("---"),
                 console.log(
@@ -33,10 +60,17 @@ class MiniGl {
         Material: {
           enumerable: false,
           value: class {
-            constructor(vertexShaders, fragments, uniforms = {}) {
+            constructor(
+              vertexShaders: string,
+              fragments: string,
+              uniforms: Record<string, any> = {}
+            ) {
               const material = this;
-              function getShaderByType(type, source) {
-                const shader = context.createShader(type);
+              function getShaderByType(
+                type: number,
+                source: string
+              ): WebGLShader {
+                const shader = context.createShader(type) as WebGLShader;
                 return (
                   context.shaderSource(shader, source),
                   context.compileShader(shader),
@@ -48,7 +82,10 @@ class MiniGl {
                   shader
                 );
               }
-              function getUniformVariableDeclarations(uniforms, type) {
+              function getUniformVariableDeclarations(
+                uniforms: Record<string, any>,
+                type: ShaderType
+              ): string {
                 return Object.entries(uniforms)
                   .map(([uniform, value]) =>
                     value.getDeclaration(uniform, type)
@@ -93,9 +130,7 @@ class MiniGl {
                 material.attachUniforms(void 0, _miniGl.commonUniforms),
                 material.attachUniforms(void 0, material.uniforms);
             }
-            //t = uniform
-            attachUniforms(name, uniforms) {
-              //n  = material
+            attachUniforms(name?: string, uniforms?: any) {
               const material = this;
               void 0 === name
                 ? Object.entries(uniforms).forEach(([name, uniform]) => {
@@ -126,7 +161,7 @@ class MiniGl {
         Uniform: {
           enumerable: !1,
           value: class {
-            constructor(e) {
+            constructor(e: any) {
               (this.type = "float"), Object.assign(this, e);
               (this.typeFn =
                 {
@@ -139,7 +174,7 @@ class MiniGl {
                 }[this.type] || "1f"),
                 this.update();
             }
-            update(value) {
+            update(value?: WebGLUniformLocation | null) {
               void 0 !== this.value &&
                 context[`uniform${this.typeFn}`](
                   value,
@@ -149,10 +184,11 @@ class MiniGl {
                   0 === this.typeFn.indexOf("Matrix") ? this.value : null
                 );
             }
-            //e - name
-            //t - type
-            //n - length
-            getDeclaration(name, type, length) {
+            getDeclaration(
+              name: string,
+              type: ShaderType,
+              length?: number
+            ): string {
               const uniform = this;
               if (uniform.excludeFrom !== type) {
                 if ("array" === uniform.type)
@@ -191,7 +227,13 @@ class MiniGl {
         PlaneGeometry: {
           enumerable: !1,
           value: class {
-            constructor(width, height, n, i, orientation) {
+            constructor(
+              width: number,
+              height: number,
+              n?: number,
+              i?: number,
+              orientation?: string
+            ) {
               context.createBuffer(),
                 (this.attributes = {
                   position: new _miniGl.Attribute({
@@ -215,7 +257,7 @@ class MiniGl {
                 this.setTopology(n, i),
                 this.setSize(width, height, orientation);
             }
-            setTopology(e = 1, t = 1) {
+            setTopology(e: number = 1, t: number = 1) {
               const n = this;
               (n.xSegCount = e),
                 (n.ySegCount = t),
@@ -259,7 +301,11 @@ class MiniGl {
                   index: n.attributes.index,
                 });
             }
-            setSize(width = 1, height = 1, orientation = "xz") {
+            setSize(
+              width: number = 1,
+              height: number = 1,
+              orientation: string = "xz"
+            ) {
               const geometry = this;
               (geometry.width = width),
                 (geometry.height = height),
@@ -297,7 +343,7 @@ class MiniGl {
         Mesh: {
           enumerable: !1,
           value: class {
-            constructor(geometry, material) {
+            constructor(geometry: any, material: any) {
               const mesh = this;
               (mesh.geometry = geometry),
                 (mesh.material = material),
@@ -339,7 +385,7 @@ class MiniGl {
         Attribute: {
           enumerable: !1,
           value: class {
-            constructor(e) {
+            constructor(e: any) {
               (this.type = context.FLOAT),
                 (this.normalized = !1),
                 (this.buffer = context.createBuffer()),
@@ -355,7 +401,7 @@ class MiniGl {
                   context.STATIC_DRAW
                 ));
             }
-            attach(e, t) {
+            attach(e: string, t: WebGLProgram): number {
               const n = context.getAttribLocation(t, e);
               return (
                 this.target === context.ARRAY_BUFFER &&
@@ -371,7 +417,7 @@ class MiniGl {
                 n
               );
             }
-            use(e) {
+            use(e: number) {
               context.bindBuffer(this.target, this.buffer),
                 this.target === context.ARRAY_BUFFER &&
                   (context.enableVertexAttribArray(e),
@@ -407,7 +453,7 @@ class MiniGl {
       }),
     };
   }
-  setSize(e = 640, t = 480) {
+  setSize(e: number = 640, t: number = 480) {
     (this.width = e),
       (this.height = t),
       (this.canvas.width = e),
@@ -420,8 +466,13 @@ class MiniGl {
         height: t,
       });
   }
-  //left, right, top, bottom, near, far
-  setOrthographicCamera(e = 0, t = 0, n = 0, i = -2e3, s = 2e3) {
+  setOrthographicCamera(
+    e: number = 0,
+    t: number = 0,
+    n: number = 0,
+    i: number = -2e3,
+    s: number = 2e3
+  ) {
     (this.commonUniforms.projectionMatrix.value = [
       2 / this.width,
       0,
