@@ -590,13 +590,20 @@ class Gradient {
       e(this, "play", () => {
         requestAnimationFrame(this.animate), (this.conf.playing = true);
       }),
-      e(this, "initGradient", (selector) => {
-        this.el = document.querySelector(selector);
+      e(this, "initGradient", (canvasElement) => {
+        // Accept either a canvas element or a selector string for backward compatibility
+        console.log("initGradient called with:", canvasElement);
+        this.el =
+          canvasElement instanceof HTMLCanvasElement
+            ? canvasElement
+            : document.querySelector(canvasElement);
+        console.log("Canvas element set to:", this.el);
         this.connect();
         return this;
       });
   }
   async connect() {
+    console.log("connect() called, this.el:", this.el);
     (this.shaderFiles = {
       vertex:
         "varying vec3 v_color;\n\nvoid main() {\n  float time = u_time * u_global.noiseSpeed;\n\n  vec2 noiseCoord = resolution * uvNorm * u_global.noiseFreq;\n\n  vec2 st = 1. - uvNorm.xy;\n\n  //\n  // Tilting the plane\n  //\n\n  // Front-to-back tilt\n  float tilt = resolution.y / 2.0 * uvNorm.y;\n\n  // Left-to-right angle\n  float incline = resolution.x * uvNorm.x / 2.0 * u_vertDeform.incline;\n\n  // Up-down shift to offset incline\n  float offset = resolution.x / 2.0 * u_vertDeform.incline * mix(u_vertDeform.offsetBottom, u_vertDeform.offsetTop, uv.y);\n\n  //\n  // Vertex noise\n  //\n\n  float noise = snoise(vec3(\n    noiseCoord.x * u_vertDeform.noiseFreq.x + time * u_vertDeform.noiseFlow,\n    noiseCoord.y * u_vertDeform.noiseFreq.y,\n    time * u_vertDeform.noiseSpeed + u_vertDeform.noiseSeed\n  )) * u_vertDeform.noiseAmp;\n\n  // Fade noise to zero at edges\n  noise *= 1.0 - pow(abs(uvNorm.y), 2.0);\n\n  // Clamp to 0\n  noise = max(0.0, noise);\n\n  vec3 pos = vec3(\n    position.x,\n    position.y + tilt + incline + noise - offset,\n    position.z\n  );\n\n  //\n  // Vertex color, to be passed to fragment shader\n  //\n\n  if (u_active_colors[0] == 1.) {\n    v_color = u_baseColor;\n  }\n\n  for (int i = 0; i < u_waveLayers_length; i++) {\n    if (u_active_colors[i + 1] == 1.) {\n      WaveLayers layer = u_waveLayers[i];\n\n      float noise = smoothstep(\n        layer.noiseFloor,\n        layer.noiseCeil,\n        snoise(vec3(\n          noiseCoord.x * layer.noiseFreq.x + time * layer.noiseFlow,\n          noiseCoord.y * layer.noiseFreq.y,\n          time * layer.noiseSpeed + layer.noiseSeed\n        )) / 2.0 + 0.5\n      );\n\n      v_color = blendNormal(v_color, layer.color, pow(noise, 4.));\n    }\n  }\n\n  //\n  // Finish\n  //\n\n  gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);\n}",
@@ -623,7 +630,7 @@ class Gradient {
               ((this.computedCanvasStyle = getComputedStyle(this.el)),
               this.waitForCssVars());
           }));
-          /*
+    /*
          this.scrollObserver = await s.create(.1, !1),
          this.scrollObserver.observe(this.el),
          this.scrollObserver.onSeparate(() => {

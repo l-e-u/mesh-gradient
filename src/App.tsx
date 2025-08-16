@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
@@ -7,13 +7,25 @@ import { Gradient } from "./utilities/Gradient";
 
 function App() {
   const [count, setCount] = useState(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     // Create your instance
     const gradient = new Gradient();
 
-    // Call `initGradient` with the selector to your canvas
-    gradient.initGradient("#gradient-canvas");
+    // Call `initGradient` with the canvas element using useRef
+    if (canvasRef.current) {
+      console.log("Canvas element:", canvasRef.current);
+      console.log(
+        "Canvas dimensions:",
+        canvasRef.current.width,
+        "x",
+        canvasRef.current.height
+      );
+      gradient.initGradient(canvasRef.current);
+    } else {
+      console.log("Canvas ref is null");
+    }
   }, []);
 
   return (
@@ -38,7 +50,11 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
-      <canvas id="gradient-canvas" data-transition-in />
+      <canvas
+        ref={canvasRef}
+        data-transition-in
+        style={{ width: "100%", height: "600px" }}
+      />
     </>
   );
 }
