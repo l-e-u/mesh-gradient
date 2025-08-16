@@ -8,14 +8,6 @@ import {
   BLEND_SHADER,
 } from "./shaders.ts";
 
-["SCREEN", "LINEAR_LIGHT"].reduce(
-  (hexCode, t, n) =>
-    Object.assign(hexCode, {
-      [t]: n,
-    }),
-  {}
-);
-
 //Gradient object
 export class Gradient {
   constructor() {
