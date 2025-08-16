@@ -8,11 +8,21 @@ import type {
   CommonUniforms,
   DebugFunction,
   ShaderType,
+  UniformTypeMap,
+  MaterialImpl,
+  UniformImpl,
+  PlaneGeometryImpl,
+  MeshImpl,
+  AttributeImpl,
+  Uniform,
+  UniformInstance,
+  AttributeInstance,
 } from "./types/MiniGl.types";
+
 class MiniGl implements IMiniGl {
   canvas!: HTMLCanvasElement;
   gl!: WebGLRenderingContext;
-  meshes: any[] = [];
+  meshes: MeshImpl[] = [];
   width!: number;
   height!: number;
   debug!: DebugFunction;
@@ -45,7 +55,8 @@ class MiniGl implements IMiniGl {
         debug && debug_output
           ? function (e: string) {
               const t = new Date();
-              t - _miniGl.lastDebugMsg > 1e3 && console.log("---"),
+              t.getTime() - (_miniGl.lastDebugMsg?.getTime() || 0) > 1e3 &&
+                console.log("---"),
                 console.log(
                   t.toLocaleTimeString() +
                     Array(Math.max(0, 32 - e.length)).join(" ") +
@@ -59,11 +70,19 @@ class MiniGl implements IMiniGl {
       Object.defineProperties(_miniGl, {
         Material: {
           enumerable: false,
-          value: class {
+          value: class implements MaterialImpl {
+            uniforms: Record<string, Uniform> = {};
+            uniformInstances: UniformInstance[] = [];
+            vertexSource: string = "";
+            Source: string = "";
+            vertexShader: WebGLShader | null = null;
+            fragmentShader: WebGLShader | null = null;
+            program: WebGLProgram | null = null;
+
             constructor(
               vertexShaders: string,
               fragments: string,
-              uniforms: Record<string, any> = {}
+              uniforms: Record<string, Uniform> = {}
             ) {
               const material = this;
               function getShaderByType(
@@ -83,7 +102,7 @@ class MiniGl implements IMiniGl {
                 );
               }
               function getUniformVariableDeclarations(
-                uniforms: Record<string, any>,
+                uniforms: Record<string, Uniform>,
                 type: ShaderType
               ): string {
                 return Object.entries(uniforms)
@@ -130,59 +149,84 @@ class MiniGl implements IMiniGl {
                 material.attachUniforms(void 0, _miniGl.commonUniforms),
                 material.attachUniforms(void 0, material.uniforms);
             }
-            attachUniforms(name?: string, uniforms?: any) {
+            attachUniforms(
+              name?: string,
+              uniforms?: Record<string, Uniform> | Uniform
+            ): void {
               const material = this;
               void 0 === name
-                ? Object.entries(uniforms).forEach(([name, uniform]) => {
+                ? uniforms &&
+                  Object.entries(uniforms).forEach(([name, uniform]) => {
                     material.attachUniforms(name, uniform);
                   })
-                : "array" == uniforms.type
-                ? uniforms.value.forEach((uniform, i) =>
+                : uniforms && "array" == (uniforms as Uniform).type
+                ? (
+                    uniforms as unknown as { type: string; value: Uniform[] }
+                  ).value.forEach((uniform: Uniform, i: number) =>
                     material.attachUniforms(`${name}[${i}]`, uniform)
                   )
-                : "struct" == uniforms.type
-                ? Object.entries(uniforms.value).forEach(([uniform, i]) =>
+                : uniforms && "struct" == (uniforms as Uniform).type
+                ? Object.entries(
+                    (
+                      uniforms as unknown as {
+                        type: string;
+                        value: Record<string, Uniform>;
+                      }
+                    ).value
+                  ).forEach(([uniform, i]) =>
                     material.attachUniforms(`${name}.${uniform}`, i)
                   )
                 : (_miniGl.debug("Material.attachUniforms", {
                     name: name,
                     uniform: uniforms,
                   }),
-                  material.uniformInstances.push({
-                    uniform: uniforms,
-                    location: context.getUniformLocation(
-                      material.program,
-                      name
-                    ),
-                  }));
+                  uniforms &&
+                    material.uniformInstances.push({
+                      uniform: uniforms as Uniform,
+                      location: context.getUniformLocation(
+                        material.program as WebGLProgram,
+                        name as string
+                      ),
+                    }));
             }
           },
         },
         Uniform: {
           enumerable: !1,
-          value: class {
-            constructor(e: any) {
+          value: class implements UniformImpl {
+            type: string = "float";
+            typeFn: string = "1f";
+            value: any;
+            transpose?: boolean;
+            excludeFrom?: ShaderType;
+
+            constructor(e: Partial<UniformImpl>) {
               (this.type = "float"), Object.assign(this, e);
+              const typeMap: UniformTypeMap = {
+                float: "1f",
+                int: "1i",
+                vec2: "2fv",
+                vec3: "3fv",
+                vec4: "4fv",
+                mat4: "Matrix4fv",
+              };
               (this.typeFn =
-                {
-                  float: "1f",
-                  int: "1i",
-                  vec2: "2fv",
-                  vec3: "3fv",
-                  vec4: "4fv",
-                  mat4: "Matrix4fv",
-                }[this.type] || "1f"),
+                typeMap[this.type as keyof UniformTypeMap] || "1f"),
                 this.update();
             }
             update(value?: WebGLUniformLocation | null) {
-              void 0 !== this.value &&
-                context[`uniform${this.typeFn}`](
+              if (void 0 !== this.value) {
+                const uniformMethod = `uniform${this.typeFn}`;
+                const fn = (context as any)[uniformMethod] as Function;
+                fn.call(
+                  context,
                   value,
                   0 === this.typeFn.indexOf("Matrix")
                     ? this.transpose
                     : this.value,
                   0 === this.typeFn.indexOf("Matrix") ? this.value : null
                 );
+              }
             }
             getDeclaration(
               name: string,
@@ -209,24 +253,34 @@ class MiniGl implements IMiniGl {
                                  {\n` +
                       Object.entries(uniform.value)
                         .map(([name, uniform]) =>
-                          uniform
+                          (uniform as Uniform)
                             .getDeclaration(name, type)
                             .replace(/^uniform/, "")
                         )
                         .join("") +
-                      `\n} ${name}${length > 0 ? `[${length}]` : ""};`
+                      `\n} ${name}${length && length > 0 ? `[${length}]` : ""};`
                   );
                 }
                 return `uniform ${uniform.type} ${name}${
-                  length > 0 ? `[${length}]` : ""
+                  length && length > 0 ? `[${length}]` : ""
                 };`;
               }
+              return "";
             }
           },
         },
         PlaneGeometry: {
           enumerable: !1,
-          value: class {
+          value: class implements PlaneGeometryImpl {
+            attributes: any;
+            xSegCount: number = 0;
+            ySegCount: number = 0;
+            vertexCount: number = 0;
+            quadCount: number = 0;
+            width: number = 0;
+            height: number = 0;
+            orientation: string = "xz";
+
             constructor(
               width: number,
               height: number,
@@ -342,8 +396,13 @@ class MiniGl implements IMiniGl {
         },
         Mesh: {
           enumerable: !1,
-          value: class {
-            constructor(geometry: any, material: any) {
+          value: class implements MeshImpl {
+            geometry!: PlaneGeometryImpl;
+            material!: MaterialImpl;
+            wireframe: boolean = false;
+            attributeInstances: AttributeInstance[] = [];
+
+            constructor(geometry: PlaneGeometryImpl, material: MaterialImpl) {
               const mesh = this;
               (mesh.geometry = geometry),
                 (mesh.material = material),
@@ -353,7 +412,10 @@ class MiniGl implements IMiniGl {
                   ([e, attribute]) => {
                     mesh.attributeInstances.push({
                       attribute: attribute,
-                      location: attribute.attach(e, mesh.material.program),
+                      location: (attribute as AttributeImpl).attach(
+                        e,
+                        mesh.material.program as WebGLProgram
+                      ),
                     });
                   }
                 ),
@@ -365,14 +427,14 @@ class MiniGl implements IMiniGl {
             draw() {
               context.useProgram(this.material.program),
                 this.material.uniformInstances.forEach(
-                  ({ uniform: e, location: t }) => e.update(t)
+                  ({ uniform: e, location: t }: UniformInstance) => e.update(t)
                 ),
                 this.attributeInstances.forEach(
-                  ({ attribute: e, location: t }) => e.use(t)
+                  ({ attribute: e, location: t }: AttributeInstance) => e.use(t)
                 ),
                 context.drawElements(
                   this.wireframe ? context.LINES : context.TRIANGLES,
-                  this.geometry.attributes.index.values.length,
+                  this.geometry.attributes.index.values?.length || 0,
                   context.UNSIGNED_SHORT,
                   0
                 );
@@ -384,7 +446,14 @@ class MiniGl implements IMiniGl {
         },
         Attribute: {
           enumerable: !1,
-          value: class {
+          value: class implements AttributeImpl {
+            type: number = 0;
+            normalized: boolean = false;
+            buffer: WebGLBuffer | null = null;
+            values?: Float32Array | Uint16Array;
+            target: number = 0;
+            size: number = 0;
+
             constructor(e: any) {
               (this.type = context.FLOAT),
                 (this.normalized = !1),

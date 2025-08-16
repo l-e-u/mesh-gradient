@@ -7,6 +7,16 @@
 export type UniformType = "float" | "int" | "vec2" | "vec3" | "vec4" | "mat4";
 export type UniformTypeFn = "1f" | "1i" | "2fv" | "3fv" | "4fv" | "Matrix4fv";
 
+// Type mapping for uniform functions
+export interface UniformTypeMap {
+  float: "1f";
+  int: "1i";
+  vec2: "2fv";
+  vec3: "3fv";
+  vec4: "4fv";
+  mat4: "Matrix4fv";
+}
+
 // Shader types
 export type ShaderType = "vertex" | "fragment";
 
@@ -39,16 +49,19 @@ export interface UniformArray {
   value: Uniform[];
 }
 
-// Uniform class interface
-export interface Uniform {
-  type: UniformType;
+// Uniform implementation interface
+export interface UniformImpl {
+  type: UniformType | string;
   value?: UniformValue;
   transpose?: boolean;
   excludeFrom?: ShaderType;
-  typeFn?: UniformTypeFn;
-  update(location?: WebGLUniformLocation): void;
+  typeFn?: UniformTypeFn | string;
+  update(location?: WebGLUniformLocation | null): void;
   getDeclaration(name: string, type: ShaderType, length?: number): string;
 }
+
+// Uniform class interface
+export interface Uniform extends UniformImpl {}
 
 // Uniform instance
 export interface UniformInstance {
@@ -65,8 +78,8 @@ export interface AttributeConfig {
   values?: Float32Array | Uint16Array;
 }
 
-// Attribute class interface
-export interface Attribute {
+// Attribute implementation interface
+export interface AttributeImpl {
   target: number;
   size: number;
   type: number;
@@ -77,6 +90,9 @@ export interface Attribute {
   attach(name: string, program: WebGLProgram): number;
   use(location: number): void;
 }
+
+// Attribute class interface
+export interface Attribute extends AttributeImpl {}
 
 // Attribute instance
 export interface AttributeInstance {
@@ -92,8 +108,8 @@ export interface GeometryAttributes {
   index: Attribute;
 }
 
-// PlaneGeometry class interface
-export interface PlaneGeometry {
+// PlaneGeometry implementation interface
+export interface PlaneGeometryImpl {
   attributes: GeometryAttributes;
   xSegCount: number;
   ySegCount: number;
@@ -106,8 +122,11 @@ export interface PlaneGeometry {
   setSize(width?: number, height?: number, orientation?: string): void;
 }
 
-// Material class interface
-export interface Material {
+// PlaneGeometry class interface
+export interface PlaneGeometry extends PlaneGeometryImpl {}
+
+// Material implementation interface
+export interface MaterialImpl {
   uniforms: Record<string, Uniform>;
   uniformInstances: UniformInstance[];
   vertexSource: string;
@@ -121,8 +140,11 @@ export interface Material {
   ): void;
 }
 
-// Mesh class interface
-export interface Mesh {
+// Material class interface
+export interface Material extends MaterialImpl {}
+
+// Mesh implementation interface
+export interface MeshImpl {
   geometry: PlaneGeometry;
   material: Material;
   wireframe: boolean;
@@ -130,6 +152,9 @@ export interface Mesh {
   draw(): void;
   remove(): void;
 }
+
+// Mesh class interface
+export interface Mesh extends MeshImpl {}
 
 // Common uniforms interface
 export interface CommonUniforms {
