@@ -37,11 +37,8 @@ function App() {
       </p>
       <MeshGradientCanvas
         colors={[
-          "rgb(255, 100, 100)", // Red
-          "rgb(100, 255, 100)", // Green
-          "rgb(100, 100, 255)", // Blue
-          "rgb(255, 255, 100)", // Yellow
-          "rgb(255, 100, 255)", // Magenta
+          "rgba(0, 0, 0, 0)", // Semi-transparent red
+          "rgba(0, 0, 0, 1)", // Semi-transparent green
         ]}
       />
     </>

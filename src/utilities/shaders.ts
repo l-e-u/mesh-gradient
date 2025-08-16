@@ -1,5 +1,5 @@
 // Vertex shader code
-export const VERTEX_SHADER = `varying vec3 v_color;
+export const VERTEX_SHADER = `varying vec4 v_color;
 
 void main() {
   float time = u_time * u_global.noiseSpeed;
@@ -77,15 +77,15 @@ void main() {
 }`;
 
 // Fragment shader code
-export const FRAGMENT_SHADER = `varying vec3 v_color;
+export const FRAGMENT_SHADER = `varying vec4 v_color;
 
 void main() {
-  vec3 color = v_color;
+  vec4 color = v_color;
   if (u_darken_top == 1.0) {
     vec2 st = gl_FragCoord.xy/resolution.xy;
     color.g -= pow(st.y + sin(-12.0) * st.x, u_shadow_power) * 0.4;
   }
-  gl_FragColor = vec4(color, 1.0);
+  gl_FragColor = color;
 }`;
 
 // Noise shader code
@@ -206,6 +206,16 @@ vec3 blendNormal(vec3 base, vec3 blend) {
 
 vec3 blendNormal(vec3 base, vec3 blend, float opacity) {
 	return (blendNormal(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec4 blendNormal(vec4 base, vec4 blend) {
+	return vec4(blend.rgb, blend.a);
+}
+
+vec4 blendNormal(vec4 base, vec4 blend, float opacity) {
+	vec3 blendedColor = blendNormal(base.rgb, blend.rgb) * opacity + base.rgb * (1.0 - opacity);
+	float blendedAlpha = blend.a * opacity + base.a * (1.0 - opacity);
+	return vec4(blendedColor, blendedAlpha);
 }
 
 // Screen

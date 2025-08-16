@@ -1,4 +1,4 @@
-import { normalizeColor } from "./normalizeColor.ts";
+import { normalizeColorRgba } from "./normalizeColor.ts";
 import { MiniGl } from "./MiniGl.ts";
 import {
   VERTEX_SHADER,
@@ -255,7 +255,7 @@ export class Gradient implements IGradient {
       }),
       u_baseColor: new this.minigl!.Uniform({
         value: this.sectionColors[0],
-        type: "vec3",
+        type: "vec4",
         excludeFrom: "fragment",
       }),
       u_waveLayers: new this.minigl!.Uniform({
@@ -270,7 +270,7 @@ export class Gradient implements IGradient {
           value: {
             color: new this.minigl!.Uniform({
               value: this.sectionColors[e],
-              type: "vec3",
+              type: "vec4",
             }),
             noiseFreq: new this.minigl!.Uniform({
               value: [
@@ -349,10 +349,12 @@ export class Gradient implements IGradient {
         0xeae2ff, // #eae2ff - light purple
         0xb9beff, // #b9beff - purple
       ];
-      const normalizedColors = defaultColors.map(normalizeColor);
+      const normalizedColors = defaultColors.map((color) =>
+        normalizeColorRgba(color, 1.0)
+      );
       this.sectionColors = normalizedColors;
     }
-    // If custom colors were provided, they're already normalized from parseRgbColor
+    // If custom colors were provided, they're already normalized from parseRgbaColor
   }
 }
 
