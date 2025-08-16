@@ -69,7 +69,6 @@ export class Gradient {
         this.handleScrollEnd,
         this.scrollingRefreshDelay
       );
-      this.isGradientLegendVisible && this.hideGradientLegend();
       this.conf.playing && ((this.isScrolling = true), this.pause());
     };
 
@@ -328,15 +327,6 @@ export class Gradient {
   }
   toggleColor(index: number) {
     this.activeColors[index] = 0 === this.activeColors[index] ? 1 : 0;
-  }
-  showGradientLegend() {
-    this.width > this.minWidth &&
-      ((this.isGradientLegendVisible = !0),
-      document.body.classList.add("isGradientLegendVisible"));
-  }
-  hideGradientLegend() {
-    (this.isGradientLegendVisible = !1),
-      document.body.classList.remove("isGradientLegendVisible");
   }
   init() {
     this.initGradientColors(),
