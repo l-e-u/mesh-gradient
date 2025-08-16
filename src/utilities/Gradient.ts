@@ -28,7 +28,7 @@ export class Gradient implements IGradient {
   isIntersecting = false;
   shaderFiles: ShaderFiles | undefined = undefined;
   vertexShader: string | undefined = undefined;
-  sectionColors: number[] | undefined = undefined;
+  sectionColors: number[] = [];
   conf: GradientConfig | undefined = undefined;
   uniforms: GradientUniforms | undefined = undefined;
   t = 1253106;
@@ -325,7 +325,7 @@ export class Gradient implements IGradient {
     this.activeColors[index] = 0 === this.activeColors[index] ? 1 : 0;
   }
   init() {
-    this.initGradientColors(),
+    this.normalizeColors(),
       this.initMesh(),
       this.resize(),
       requestAnimationFrame(this.animate),
@@ -334,7 +334,7 @@ export class Gradient implements IGradient {
   /*
    * Initializes the four section colors by converting them to normalized format.
    */
-  initGradientColors() {
+  normalizeColors() {
     // Colors are already set in constructor, just convert them to normalized format
     this.sectionColors = this.sectionColors.map(normalizeColor);
   }
