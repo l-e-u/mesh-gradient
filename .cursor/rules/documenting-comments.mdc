@@ -1,10 +1,10 @@
 ---
 description: Documenting comments
-globs:
+globs: src/**/*.ts
 alwaysApply: true
 ---
 
-- When writing comments, the file itself starts with a block comment containing a short description of the file's overview. This block comments requires tag "@updatedAt" with today's system date in the YYYY-MM-DD format.
+- When writing comments, the file itself starts with a block comment containing a short description of the file's overview. This block comments requires tag "@updatedAt" with today's system date in the YYYY-MM-DD format. The system date can be defined by running the script in @cursor_current_date.ts
 
 - When updating a file check for the block comment at the start of the file. If one is not there, add it.
 
